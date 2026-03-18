@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Rejection Email</title>
+    <style>
+        /* CSS styles */
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: rgb(159, 18, 57);
+        }
+        .course-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .course-info-table th,
+        .course-info-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .course-info-table th {
+            background-color: rgb(30, 64, 175);
+            color: #fff;
+        }
+        .message {
+            color: #333;
+        }
+        .email-heading {
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+    <!-- Include Roboto font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="email-heading">Enrollment Rejection Details</h1>
+        </div>
+        <table class="course-info-table">
+            <tr>
+                <th>Enrollment ID</th>
+                <td>{{enrollment_id}}</td>
+            </tr>
+            <tr>
+                <th>Rejection Message</th>
+                <td>{{rejection_message}}</td>
+            </tr>
+        </table>
+        <div class="message">
+            <p>To investigate further, reply to this email. Thanks</p>
+        </div>
+    </div>
+</body>
+</html>
