@@ -45,25 +45,6 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Running the app using Docker
-
-```bash
-$ docker-compose up -d
-```
-
-##### .env file:
-```bash
-DB_HOST=postgres
-DB_NAME=sdc_db
-```
-
-##### Run the command below after pulling new changes from main branch:
-```bash
-
-$ docker-compose up --build -d
-```
-##### The above command will build any images that have changed since the last build.
-
 ## Test
 
 ```bash
@@ -99,25 +80,6 @@ $ npm run migration:show
 ```bash
 # load seeds
 $ npm run seed
-```
-
-## Move Handlebar Assets To Dist (Post build)
-
-```bash
-$ npm run copy-hbs-asset
-```
-
-## PM2 (VPS)
-
-```bash
-# Run build
-$ npm run build
-
-# Restart all pm2 services (Running in cluster mode)
-$ pm2 restart all    
-
-# Check pm2 logs
-$ pm2 logs <pid>
 ```
 
 ## Support
