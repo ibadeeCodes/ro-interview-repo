@@ -1,97 +1,121 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# RO Interview - Employee Shift Swap System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A robust NestJS-based API for managing employee shift swaps, built with a focus on clean architecture, idempotency, and event-driven status tracking.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 1. System Overview
 
-## Description
+The system facilitates a secure and fair process for employees to exchange work shifts.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Propose Swap**: Employees can request to swap one of their shifts with a shift from another employee.
+- **Respond to Swap**: The target employee can accept or reject the proposal.
+- **Manager Review**: All accepted swaps must be reviewed and approved by an assigned manager before the shifts are officially swapped.
+- **Idempotency**: The system handles duplicate or redundant actions (e.g., re-accepting an already accepted swap) safely, ensuring only one valid state transition occurs while providing clear feedback.
+- **Lazy Expiration**: Expired swap requests (not acted upon within 24 hours) are automatically cleaned up when the list is fetched.
+- **Event-Driven**: Emits events for every swap status change, allowing for easy integration with notification systems.
 
-## Installation
+## 2. Architecture Decisions
 
-```bash
-$ npm install
+- **Modular Design**: Organized into cohesive modules (`Auth`, `Users`, `Employees`) for maintainability.
+- **Service Specialization (SRP)**: The original monolithic `EmployeesService` was refactored into specialized services:
+  - `SwapRequestsService`: Handles the complex lifecycle of a swap Request.
+  - `ShiftsService`: Manages shift-specific operations.
+- **Repository Pattern**: Abstract Base Repository provides a consistent interface for database operations, decoupling the domain logic from TypeORM.
+- **Transactional Integrity**: Critical operations (like marking two shifts as swapped simultaneously) are wrapped in custom `@Transactional` decorators to ensure data consistency.
+- **Idempotent Actions**: Instead of allowing inconsistent state transitions, the system validates the current state of a swap request before every action. This ensures that redundant or late actions do NOT impact the system's integrity and return meaningful error messages. This results in a robust API that is easy to integrate with.
+- **Simplified Expiration**: Chose a "lazy cleanup" approach for swap expiration to avoid the overhead of cron jobs in a demonstration environment, keeping the system lightweight and easy to deploy.
+
+## 3. ERD (Entity Relationship Diagram)
+
+```mermaid
+erDiagram
+    USER ||--|| EMPLOYEE : "is"
+    EMPLOYEE ||--o{ SHIFT : "has"
+    EMPLOYEE ||--o{ SWAP_REQUEST : "proposes"
+    EMPLOYEE ||--o{ SWAP_REQUEST : "targets"
+    EMPLOYEE ||--o{ SWAP_REQUEST : "receives review"
+    SHIFT ||--o{ SWAP_REQUEST : "proposing_shift"
+    SHIFT ||--o{ SWAP_REQUEST : "target_shift"
+
+    USER {
+        int id
+        string email
+        string password
+        enum role
+        boolean is_active
+    }
+
+    EMPLOYEE {
+        int id
+        int userId
+        string name
+    }
+
+    SHIFT {
+        int id
+        int employeeId
+        datetime startTime
+        datetime endTime
+        boolean isSwapped
+    }
+
+    SWAP_REQUEST {
+        int id
+        int proposingEmployeeId
+        int proposingShiftId
+        int targetEmployeeId
+        int targetShiftId
+        enum status
+        int managerId
+        datetime createdAt
+    }
 ```
 
-## Running the app
+## 4. How to Run
 
-```bash
-# development
-$ npm run start
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL
 
-# watch mode
-$ npm run start:dev
+### Setup
 
-# production mode
-$ npm run start:prod
-```
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-## Test
+2. **Configure Environment**:
+   Create a `.env` file in the root directory (refer to `.env` for required variables):
+   ```env
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=interview-demo
+   DB_USER=postgres
+   DB_PASSWORD=your_password
+   PORT=3001
+   JWT_SECRET_KEY=your_secret
+   JWT_EXPIRES_IN=1d
+   ```
 
-```bash
-# unit tests
-$ npm run test
+3. **Run Migrations** (Optional - if using a fresh DB):
+   ```bash
+   npm run migration:run
+   ```
 
-# e2e tests
-$ npm run test:e2e
+4. **Start the Application**:
+   ```bash
+   # Development mode
+   npm run start:dev
+   ```
 
-# test coverage
-$ npm run test:cov
-```
+### API Documentation
+Once the server is running, access the Swagger UI at:
+`http://localhost:3001/api-docs`
 
-## TypeORM Migrations
+## Features Added During Development
 
-```bash
-# generate migration
-$ npm run migration:generate --name=MigrationFileName
-
-# run migration
-$ npm run migration:run
-
-# revert migration
-$ npm run migration:revert
-
-# show migration history
-$ npm run migration:show
-```
-
-
-## TypeORM Seeders
-
-```bash
-# load seeds
-$ npm run seed
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+- [x] Refactored `EmployeesService` into specialized services.
+- [x] Implemented `@Transactional` for swap operations.
+- [x] Added `isSwapped` flag to shifts.
+- [x] Implemented lazy cleanup for expired swaps.
+- [x] Integrated NestJS `EventEmitter` for status change tracking.
+- [x] Established one-to-one relationship between `User` and `Employee`.
